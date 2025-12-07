@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>RSVP</title>
+  <style>
+    body { font-family: Arial; max-width: 500px; margin: auto; padding: 20px; }
+    input, select, button { width: 100%; padding: 10px; margin: 10px 0; }
+    #step2 { display: none; }
+    #success { display: none; color: green; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+<h2>RSVP</h2>
+
+<div id="step1">
+  <label>Código</label>
+  <input id="code" type="text" placeholder="Ingresa tu código">
+
+  <button onclick="validateCode()">Validar Código</button>
+  <p id="error" style="color:red"></p>
+</div>
+
+<div id="step2">
+  <label>Invitados que asistirán</label>
+  <select id="invitados"></select>
+  <button onclick="submitRSVP()">Enviar RSVP</button>
+</div>
+
+<p id="success">¡Gracias! Tu asistencia fue registrada.</p>
+
+<script>
+const API_URL = "AQUÍ_PONES_TU_URL_DE_APPS_SCRIPT";
+
+function validateCode() {
+  const code = document.getElementById('code').value;
+
+  fetch(API_URL + "?action=validateCode&code=" + code)
+    .then(res => res.json())
+    .then(data => {
+      if (!data.found) {
+        document.getElementById('error').innerText = "Código inválido";
+        return;
+      }
+
+      document.getElementById('error').innerText = "";
+
+      const capacity = data.capacity;
+      const select = document.getElementById('invitados');
+
+      select.innerHTML = "";
+      for (let i = 0; i <= capacity; i++) {
+        const option = document.createElement("option");
+        option.value = i;
+        option.innerText = i;
+        select.appendChild(option);
+      }
+
+      document.getElementById('step2').style.display = "block";
+    });
+}
+
+function submitRSVP() {
+  const code = document.getElementById('code').value;
+  const invitados = document.getElementById('invitados').value;
+
+  fetch(API_URL + "?action=submitRSVP&code=" + code + "&invitados=" + invitados)
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById('success').style.display = "block";
+    });
+}
+</script>
+
+</body>
+</html>
