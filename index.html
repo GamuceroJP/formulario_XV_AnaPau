@@ -117,7 +117,11 @@
             <option value="No">No</option>
         </select>
 
-        <!-- Contenido adicional si asisten -->
+        <!-- CORREO SIEMPRE VISIBLE -->
+        <label>Correo electrónico</label>
+        <input id="email" type="email" placeholder="correo@example.com">
+
+        <!-- Campos adicionales solo si asistirá -->
         <div id="extraFields">
 
             <label>Favor confirmar la cantidad de asistentes:</label>
@@ -128,8 +132,6 @@
             <label>¿Algún invitado tiene restricciones alimenticias?</label>
             <textarea id="restrictions" rows="3" placeholder="Escribe aquí..."></textarea>
 
-            <label>Correo electrónico</label>
-            <input id="email" type="email" placeholder="correo@example.com">
         </div>
 
         <button onclick="submitRSVP()">Enviar RSVP</button>
@@ -141,7 +143,7 @@
 </div>
 
 <script>
-API_URL = "https://script.google.com/macros/s/AKfycbwnvcxXKoZiyv-KZcLLitPyg9vnZWVggtSL4WhHXeUU0XM0qekhjwXaS76hCwu6KTCv3Q/exec";  // ← cambia esto
+API_URL = "https://script.google.com/macros/s/AKfycbwnvcxXKoZiyv-KZcLLitPyg9vnZWVggtSL4WhHXeUU0XM0qekhjwXaS76hCwu6KTCv3Q/exec";
 
 let globalCode = "";
 let globalTotal = 0;
@@ -185,7 +187,7 @@ function validateCode() {
 }
 
 /* ------------------------------
-   MOSTRAR U OCULTAR EL FORM
+   MOSTRAR / OCULTAR CAMPOS
 --------------------------------*/
 function toggleAttendance() {
     const value = document.getElementById("attend").value;
@@ -219,15 +221,23 @@ function generateNameFields() {
 --------------------------------*/
 function submitRSVP() {
     const attend = document.getElementById("attend").value;
+    const email = document.getElementById("email").value;
 
-    // Caso: NO ASISTE
+    // 🔥 Validación mínima del email
+    if (!email) {
+        document.getElementById("success").innerText =
+            "Por favor ingresa tu correo para enviarte confirmación.";
+        return;
+    }
+
+    // Caso: NO ASISTE → enviar email también
     if (attend === "No") {
-        const url = `${API_URL}?action=submitRSVP&code=${globalCode}&attend=No`;
+        const url = `${API_URL}?action=submitRSVP&code=${globalCode}&attend=No&email=${encodeURIComponent(email)}`;
         fetch(url)
             .then(r => r.json())
             .then(() => {
                 document.getElementById("success").innerText =
-                    "Gracias por confirmar. Lamentamos que no puedas acompañarnos.";
+                    "Gracias por confirmar. Hemos enviado tu confirmación por correo.";
             });
         return;
     }
@@ -235,7 +245,6 @@ function submitRSVP() {
     // Caso: SÍ ASISTE
     const count = Number(document.getElementById("count").value);
     const restrictions = document.getElementById("restrictions").value;
-    const email = document.getElementById("email").value;
 
     let url = `${API_URL}?action=submitRSVP&code=${globalCode}&attend=Sí&count=${count}&restrictions=${encodeURIComponent(restrictions)}&email=${encodeURIComponent(email)}`;
 
@@ -248,7 +257,7 @@ function submitRSVP() {
         .then(r => r.json())
         .then(() => {
             document.getElementById("success").innerText =
-                "¡Gracias! Tu asistencia ha sido registrada correctamente.";
+                "¡Gracias! Tu asistencia ha sido registrada y se te envió confirmación por correo.";
         });
 }
 </script>
