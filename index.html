@@ -7,19 +7,27 @@
 <style>
     body {
         font-family: "Cormorant Garamond", serif;
-        background-color: #8BB7A2;  /* verde elegante */
+        background-color: #8BB7A2;
         color: #2e3d35;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        min-height: 100vh;
+    }
+
+    .container {
         max-width: 600px;
-        margin: auto;
+        width: 100%;
         padding: 20px;
-        line-height: 1.5;
     }
 
     h2 {
         text-align: center;
-        font-size: 28px;
-        letter-spacing: 2px;
+        font-size: 32px;
         color: #ffffff;
+        margin-top: 20px;
         margin-bottom: 10px;
     }
 
@@ -34,6 +42,7 @@
     label {
         font-weight: bold;
         margin-top: 10px;
+        display: block;
     }
 
     input, select, textarea {
@@ -56,40 +65,38 @@
         cursor: pointer;
         letter-spacing: 1px;
         transition: transform 0.2s ease;
+        margin-top: 10px;
     }
 
     button:hover {
         transform: scale(1.02);
     }
 
-    #message, #error {
+    #error {
         text-align: center;
+        color: #a50000;
         margin-bottom: 15px;
         font-size: 18px;
     }
 
-    #error {
-        color: #a50000;
-    }
-
     #success {
-        color: #0c5c26;
-        font-size: 22px;
         text-align: center;
-        font-weight: bold;
+        color: #0c5c26;
+        font-size: 20px;
         margin-top: 20px;
+        font-weight: bold;
     }
 
 </style>
-
 </head>
 <body>
 
+<div class="container">
 <h2>RSVP</h2>
 
 <div class="card">
 
-    <!-- STEP 1: Validar Código -->
+    <!-- STEP 1 -->
     <div id="step1">
         <label>Ingresa tu código</label>
         <input id="code" type="text" placeholder="Ej: APXV01">
@@ -97,37 +104,44 @@
         <p id="error"></p>
     </div>
 
-    <!-- STEP 2: Mostrar contenido del RSVP -->
+    <!-- STEP 2 -->
     <div id="step2" style="display:none;">
+
         <p id="welcome"></p>
         <p id="allocated"></p>
 
-        <label>Favor de confirmar la cantidad de asistentes:</label>
-        <select id="count" onchange="generateNameFields()"></select>
-
-        <div id="names"></div>
-
-        <label>¿Asistirás a la ceremonia?</label>
-        <select id="ceremony">
+        <!-- Pregunta: Asistirás -->
+        <label>¿Asistirás?</label>
+        <select id="attend" onchange="toggleAttendance()">
             <option value="Sí">Sí</option>
             <option value="No">No</option>
         </select>
 
-        <label>¿Algún invitado tiene restricciones alimenticias?</label>
-        <textarea id="restrictions" rows="3" placeholder="Escribe aquí..."></textarea>
+        <!-- Contenido adicional si asisten -->
+        <div id="extraFields">
 
-        <label>Correo electrónico</label>
-        <input id="email" type="email" placeholder="correo@example.com">
+            <label>Favor de confirmar la cantidad de asistentes:</label>
+            <select id="count" onchange="generateNameFields()"></select>
+
+            <div id="names"></div>
+
+            <label>¿Algún invitado tiene restricciones alimenticias?</label>
+            <textarea id="restrictions" rows="3" placeholder="Escribe aquí..."></textarea>
+
+            <label>Correo electrónico</label>
+            <input id="email" type="email" placeholder="correo@example.com">
+        </div>
 
         <button onclick="submitRSVP()">Enviar RSVP</button>
-
         <p id="success"></p>
+
     </div>
 
 </div>
+</div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbwnvcxXKoZiyv-KZcLLitPyg9vnZWVggtSL4WhHXeUU0XM0qekhjwXaS76hCwu6KTCv3Q/exec";  // ← cambia esto
+API_URL = "https://script.google.com/macros/s/AKfycbwnvcxXKoZiyv-KZcLLitPyg9vnZWVggtSL4WhHXeUU0XM0qekhjwXaS76hCwu6KTCv3Q/exec";  // ← cambia esto
 
 let globalCode = "";
 let globalTotal = 0;
@@ -157,7 +171,7 @@ function validateCode() {
                 `Gracias por acompañarnos, <b>${data.name}</b>`;
 
             document.getElementById("allocated").innerHTML =
-                `Con cariño hemos apartado <b>${data.total}</b> lugares para ustedes.`;
+                `Hemos apartado <b>${data.total}</b> lugares para ustedes.`;
 
             let sel = document.getElementById("count");
             sel.innerHTML = "";
@@ -168,6 +182,20 @@ function validateCode() {
             generateNameFields();
             document.getElementById("step2").style.display = "block";
         });
+}
+
+/* ------------------------------
+   MOSTRAR U OCULTAR EL FORM
+--------------------------------*/
+function toggleAttendance() {
+    const value = document.getElementById("attend").value;
+    const extra = document.getElementById("extraFields");
+
+    if (value === "No") {
+        extra.style.display = "none";
+    } else {
+        extra.style.display = "block";
+    }
 }
 
 /* ------------------------------
@@ -190,13 +218,26 @@ function generateNameFields() {
    ENVIAR RSVP
 --------------------------------*/
 function submitRSVP() {
+    const attend = document.getElementById("attend").value;
+
+    // Caso: NO ASISTE
+    if (attend === "No") {
+        const url = `${API_URL}?action=submitRSVP&code=${globalCode}&attend=No`;
+        fetch(url)
+            .then(r => r.json())
+            .then(() => {
+                document.getElementById("success").innerText =
+                    "Gracias por confirmar. Lamentamos que no puedas acompañarnos.";
+            });
+        return;
+    }
+
+    // Caso: SÍ ASISTE
     const count = Number(document.getElementById("count").value);
-    const ceremony = document.getElementById("ceremony").value;
     const restrictions = document.getElementById("restrictions").value;
     const email = document.getElementById("email").value;
 
-    // Construir parámetros
-    let url = `${API_URL}?action=submitRSVP&code=${globalCode}&count=${count}&ceremony=${encodeURIComponent(ceremony)}&restrictions=${encodeURIComponent(restrictions)}&email=${encodeURIComponent(email)}`;
+    let url = `${API_URL}?action=submitRSVP&code=${globalCode}&attend=Sí&count=${count}&restrictions=${encodeURIComponent(restrictions)}&email=${encodeURIComponent(email)}`;
 
     for (let i = 1; i <= count; i++) {
         const name = document.getElementById("name" + i).value;
@@ -205,7 +246,7 @@ function submitRSVP() {
 
     fetch(url)
         .then(r => r.json())
-        .then(data => {
+        .then(() => {
             document.getElementById("success").innerText =
                 "¡Gracias! Tu asistencia ha sido registrada correctamente.";
         });
